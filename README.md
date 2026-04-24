@@ -4,9 +4,7 @@
 > This card feature is experimental, and breaking changes may occur.
 
 A custom Home Assistant tile card feature that renders the state of an entity
-using `state-display`. Supports selecting any state content key (state,
-attributes, last_changed, last_updated, device/area/floor name) and tuning the
-target font size and weight.
+using `state-display`. Supports selecting any state content item including attributes.
 
 <img width="1431" height="481" alt="image" src="https://github.com/user-attachments/assets/e80b2bfa-d317-42f3-af2d-1d951d1ac89d" />
 
