@@ -1,19 +1,10 @@
-import { consume, type ContextType } from "@lit/context";
 import type { HassEntity } from "home-assistant-js-websocket";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import memoizeOne from "memoize-one";
-import { consumeEntityState } from "../ha/common/decorators/consume-context-entry";
 import { computeDomain } from "../ha/common/entity/compute_domain";
 import { getEntityContext } from "../ha/common/entity/context/get_entity_context";
 import { fireEvent } from "../ha/common/dom/fire_event";
-import type { LocalizeFunc } from "../ha/common/translations/localize";
-import type { FormatEntityAttributeNameFunc } from "../ha/common/translations/entity-state";
 import { HIDDEN_STATE_CONTENT_ATTRIBUTES } from "../ha/components/entity/hidden-state-content-attributes";
-import {
-  internationalizationContext,
-  registriesContext,
-} from "../ha/data/context";
 import {
   STATE_DISPLAY_SPECIAL_CONTENT,
   STATE_DISPLAY_SPECIAL_CONTENT_DOMAINS,
@@ -67,17 +58,6 @@ export class HuiStateCardFeatureEditor
 
   @property({ attribute: false }) public context?: LovelaceCardFeatureContext;
 
-  @state()
-  @consume({ context: internationalizationContext, subscribe: true })
-  private _i18n?: ContextType<typeof internationalizationContext>;
-
-  @state()
-  @consumeEntityState({ entityIdPath: ["context", "entity_id"] })
-  private _stateObj?: HassEntity;
-
-  @consume({ context: registriesContext, subscribe: true })
-  private _registries?: ContextType<typeof registriesContext>;
-
   @state() private _config?: StateCardFeatureConfig;
 
   @state() private _fontSizeMode?: FontSizeMode;
@@ -89,6 +69,15 @@ export class HuiStateCardFeatureEditor
     }
   }
 
+  private get _entityId(): string | undefined {
+    return this.context?.entity_id;
+  }
+
+  private get _stateObj(): HassEntity | undefined {
+    if (!this.hass || !this._entityId) return undefined;
+    return this.hass.states[this._entityId];
+  }
+
   private _detectMode(size: number | undefined): FontSizeMode {
     if (size === undefined) return "preset";
     return FONT_SIZE_PRESETS.some((preset) => preset.value === size)
@@ -96,94 +85,100 @@ export class HuiStateCardFeatureEditor
       : "custom";
   }
 
-  private _getContentOptions = memoizeOne(
-    (
-      localize: LocalizeFunc,
-      formatEntityAttributeName: FormatEntityAttributeNameFunc,
-      stateObj: HassEntity | undefined,
-      entityId: string | undefined
-    ) => {
-      const domain = entityId ? computeDomain(entityId) : undefined;
+  private _buildContentOptions(
+    stateObj: HassEntity | undefined,
+    entityId: string | undefined
+  ): { value: string; label: string }[] {
+    const domain = entityId ? computeDomain(entityId) : undefined;
 
-      const options: { value: string; label: string }[] = [
-        {
-          value: "state",
-          label: localize("ui.components.state-content-picker.state"),
-        },
-        {
-          value: "last_changed",
-          label: localize("ui.components.state-content-picker.last_changed"),
-        },
-        {
-          value: "last_updated",
-          label: localize("ui.components.state-content-picker.last_updated"),
-        },
-      ];
+    const options: { value: string; label: string }[] = [
+      {
+        value: "state",
+        label: this.hass!.localize("ui.components.state-content-picker.state"),
+      },
+      {
+        value: "last_changed",
+        label: this.hass!.localize(
+          "ui.components.state-content-picker.last_changed"
+        ),
+      },
+      {
+        value: "last_updated",
+        label: this.hass!.localize(
+          "ui.components.state-content-picker.last_updated"
+        ),
+      },
+    ];
 
-      if (stateObj && this._registries) {
-        const entityContext = getEntityContext(
-          stateObj,
-          this._registries.entities,
-          this._registries.devices,
-          this._registries.areas,
-          this._registries.floors
-        );
-        if (entityContext.device) {
-          options.push({
-            value: "device_name",
-            label: localize("ui.components.state-content-picker.device_name"),
-          });
-        }
-        if (entityContext.area) {
-          options.push({
-            value: "area_name",
-            label: localize("ui.components.state-content-picker.area_name"),
-          });
-        }
-        if (entityContext.floor) {
-          options.push({
-            value: "floor_name",
-            label: localize("ui.components.state-content-picker.floor_name"),
-          });
-        }
-      }
-
-      if (domain) {
-        STATE_DISPLAY_SPECIAL_CONTENT.filter((content) =>
-          STATE_DISPLAY_SPECIAL_CONTENT_DOMAINS[domain]?.includes(content)
-        ).forEach((content) => {
-          options.push({
-            value: content,
-            label: localize(`ui.components.state-content-picker.${content}`),
-          });
+    if (stateObj && this.hass) {
+      const entityContext = getEntityContext(
+        stateObj,
+        this.hass.entities,
+        this.hass.devices,
+        this.hass.areas,
+        this.hass.floors
+      );
+      if (entityContext.device) {
+        options.push({
+          value: "device_name",
+          label: this.hass.localize(
+            "ui.components.state-content-picker.device_name"
+          ),
         });
       }
-
-      if (stateObj) {
-        Object.keys(stateObj.attributes)
-          .filter((a) => !HIDDEN_STATE_CONTENT_ATTRIBUTES.includes(a))
-          .forEach((attribute) => {
-            options.push({
-              value: attribute,
-              label: formatEntityAttributeName(stateObj, attribute),
-            });
-          });
+      if (entityContext.area) {
+        options.push({
+          value: "area_name",
+          label: this.hass.localize(
+            "ui.components.state-content-picker.area_name"
+          ),
+        });
       }
-
-      return options;
+      if (entityContext.floor) {
+        options.push({
+          value: "floor_name",
+          label: this.hass.localize(
+            "ui.components.state-content-picker.floor_name"
+          ),
+        });
+      }
     }
-  );
+
+    if (domain) {
+      STATE_DISPLAY_SPECIAL_CONTENT.filter((content) =>
+        STATE_DISPLAY_SPECIAL_CONTENT_DOMAINS[domain]?.includes(content)
+      ).forEach((content) => {
+        options.push({
+          value: content,
+          label: this.hass!.localize(
+            `ui.components.state-content-picker.${content}`
+          ),
+        });
+      });
+    }
+
+    if (stateObj) {
+      Object.keys(stateObj.attributes)
+        .filter((a) => !HIDDEN_STATE_CONTENT_ATTRIBUTES.includes(a))
+        .forEach((attribute) => {
+          options.push({
+            value: attribute,
+            label: this.hass!.formatEntityAttributeName(stateObj, attribute),
+          });
+        });
+    }
+
+    return options;
+  }
 
   protected render() {
-    if (!this.hass || !this._config || !this._i18n) {
+    if (!this.hass || !this._config) {
       return nothing;
     }
 
-    const contentOptions = this._getContentOptions(
-      this._i18n.localize,
-      this.hass.formatEntityAttributeName,
+    const contentOptions = this._buildContentOptions(
       this._stateObj,
-      this.context?.entity_id
+      this._entityId
     );
 
     const stateContent = Array.isArray(this._config.state_content)
@@ -195,13 +190,13 @@ export class HuiStateCardFeatureEditor
 
     const modeButtons = [
       {
-        label: this._i18n.localize(
+        label: this.hass.localize(
           "ui.panel.lovelace.editor.features.types.state.target_font_size_mode_preset"
         ),
         value: "preset",
       },
       {
-        label: this._i18n.localize(
+        label: this.hass.localize(
           "ui.panel.lovelace.editor.features.types.state.target_font_size_mode_custom"
         ),
         value: "custom",
@@ -216,7 +211,7 @@ export class HuiStateCardFeatureEditor
 
     return html`
       <ha-select
-        .label=${this._i18n.localize(
+        .label=${this.hass.localize(
           "ui.panel.lovelace.editor.card.tile.state_content"
         )}
         naturalMenuWidth
@@ -228,7 +223,7 @@ export class HuiStateCardFeatureEditor
       <div class="font-size">
         <div class="header">
           <label>
-            ${this._i18n.localize(
+            ${this.hass.localize(
               "ui.panel.lovelace.editor.features.types.state.target_font_size"
             )}
           </label>
@@ -246,7 +241,7 @@ export class HuiStateCardFeatureEditor
                 .value=${presetValue}
                 .options=${FONT_SIZE_PRESETS.map((preset) => ({
                   value: String(preset.value),
-                  label: this._i18n!.localize(
+                  label: this.hass!.localize(
                     `ui.panel.lovelace.editor.features.types.state.target_font_size_presets.${preset.tokenKey}`
                   ),
                 }))}
@@ -269,20 +264,20 @@ export class HuiStateCardFeatureEditor
               </ha-input>
             `}
         <ha-input-helper-text>
-          ${this._i18n.localize(
+          ${this.hass.localize(
             "ui.panel.lovelace.editor.features.types.state.target_font_size_helper"
           )}
         </ha-input-helper-text>
       </div>
       <ha-select
-        .label=${this._i18n.localize(
+        .label=${this.hass.localize(
           "ui.panel.lovelace.editor.features.types.state.font_weight"
         )}
         naturalMenuWidth
         .value=${String(this._config.font_weight ?? DEFAULT_FONT_WEIGHT)}
         .options=${FONT_WEIGHT_OPTIONS.map((weight) => ({
           value: String(weight),
-          label: this._i18n!.localize(
+          label: this.hass!.localize(
             `ui.panel.lovelace.editor.features.types.state.font_weight_options.${weight}`
           ),
         }))}
