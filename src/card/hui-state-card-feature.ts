@@ -48,7 +48,7 @@ class HuiStateCardFeature extends LitElement implements LovelaceCardFeature {
 
   static getStubConfig(): StateCardFeatureConfig {
     return {
-      type: "state",
+      type: `custom:${FEATURE_TYPE}`,
     };
   }
 
