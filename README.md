@@ -8,8 +8,7 @@ using `state-display`. Supports selecting any state content key (state,
 attributes, last_changed, last_updated, device/area/floor name) and tuning the
 target font size and weight.
 
-Extracted verbatim from `home-assistant/frontend` to allow distribution outside
-the core frontend bundle.
+<img width="1431" height="481" alt="image" src="https://github.com/user-attachments/assets/e80b2bfa-d317-42f3-af2d-1d951d1ac89d" />
 
 ## Installation
 
