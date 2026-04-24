@@ -16,6 +16,7 @@ import type {
 } from "../ha/panels/lovelace/card-features/types";
 import type { LovelaceCardFeatureEditor } from "../ha/panels/lovelace/types";
 import { FEATURE_EDITOR_TYPE } from "./const";
+import { STRINGS } from "./strings";
 
 interface HaSelectDetail<T = string> {
   value: T;
@@ -29,7 +30,7 @@ interface HaInputLike extends HTMLElement {
 
 const FONT_SIZE_PRESETS: {
   value: number;
-  tokenKey: "s" | "m" | "l" | "xl" | "2xl" | "3xl";
+  tokenKey: keyof typeof STRINGS.target_font_size_presets;
 }[] = [
   { value: 12, tokenKey: "s" },
   { value: 14, tokenKey: "m" },
@@ -92,21 +93,14 @@ export class HuiStateCardFeatureEditor
     const domain = entityId ? computeDomain(entityId) : undefined;
 
     const options: { value: string; label: string }[] = [
-      {
-        value: "state",
-        label: this.hass!.localize("ui.components.state-content-picker.state"),
-      },
+      { value: "state", label: STRINGS.state_content_options.state },
       {
         value: "last_changed",
-        label: this.hass!.localize(
-          "ui.components.state-content-picker.last_changed"
-        ),
+        label: STRINGS.state_content_options.last_changed,
       },
       {
         value: "last_updated",
-        label: this.hass!.localize(
-          "ui.components.state-content-picker.last_updated"
-        ),
+        label: STRINGS.state_content_options.last_updated,
       },
     ];
 
@@ -121,25 +115,19 @@ export class HuiStateCardFeatureEditor
       if (entityContext.device) {
         options.push({
           value: "device_name",
-          label: this.hass.localize(
-            "ui.components.state-content-picker.device_name"
-          ),
+          label: STRINGS.state_content_options.device_name,
         });
       }
       if (entityContext.area) {
         options.push({
           value: "area_name",
-          label: this.hass.localize(
-            "ui.components.state-content-picker.area_name"
-          ),
+          label: STRINGS.state_content_options.area_name,
         });
       }
       if (entityContext.floor) {
         options.push({
           value: "floor_name",
-          label: this.hass.localize(
-            "ui.components.state-content-picker.floor_name"
-          ),
+          label: STRINGS.state_content_options.floor_name,
         });
       }
     }
@@ -150,14 +138,12 @@ export class HuiStateCardFeatureEditor
       ).forEach((content) => {
         options.push({
           value: content,
-          label: this.hass!.localize(
-            `ui.components.state-content-picker.${content}`
-          ),
+          label: STRINGS.state_content_options[content],
         });
       });
     }
 
-    if (stateObj) {
+    if (stateObj && this.hass) {
       Object.keys(stateObj.attributes)
         .filter((a) => !HIDDEN_STATE_CONTENT_ATTRIBUTES.includes(a))
         .forEach((attribute) => {
@@ -190,15 +176,11 @@ export class HuiStateCardFeatureEditor
 
     const modeButtons = [
       {
-        label: this.hass.localize(
-          "ui.panel.lovelace.editor.features.types.state.target_font_size_mode_preset"
-        ),
+        label: STRINGS.target_font_size_mode_preset,
         value: "preset",
       },
       {
-        label: this.hass.localize(
-          "ui.panel.lovelace.editor.features.types.state.target_font_size_mode_custom"
-        ),
+        label: STRINGS.target_font_size_mode_custom,
         value: "custom",
       },
     ];
@@ -211,9 +193,7 @@ export class HuiStateCardFeatureEditor
 
     return html`
       <ha-select
-        .label=${this.hass.localize(
-          "ui.panel.lovelace.editor.card.tile.state_content"
-        )}
+        .label=${STRINGS.state_content_label}
         naturalMenuWidth
         .value=${stateContent}
         .options=${contentOptions}
@@ -222,11 +202,7 @@ export class HuiStateCardFeatureEditor
       ></ha-select>
       <div class="font-size">
         <div class="header">
-          <label>
-            ${this.hass.localize(
-              "ui.panel.lovelace.editor.features.types.state.target_font_size"
-            )}
-          </label>
+          <label>${STRINGS.target_font_size_label}</label>
           <ha-button-toggle-group
             size="small"
             .buttons=${modeButtons}
@@ -241,9 +217,7 @@ export class HuiStateCardFeatureEditor
                 .value=${presetValue}
                 .options=${FONT_SIZE_PRESETS.map((preset) => ({
                   value: String(preset.value),
-                  label: this.hass!.localize(
-                    `ui.panel.lovelace.editor.features.types.state.target_font_size_presets.${preset.tokenKey}`
-                  ),
+                  label: STRINGS.target_font_size_presets[preset.tokenKey],
                 }))}
                 @closed=${this._stopPropagation}
                 @selected=${this._presetChanged}
@@ -264,22 +238,16 @@ export class HuiStateCardFeatureEditor
               </ha-input>
             `}
         <ha-input-helper-text>
-          ${this.hass.localize(
-            "ui.panel.lovelace.editor.features.types.state.target_font_size_helper"
-          )}
+          ${STRINGS.target_font_size_helper}
         </ha-input-helper-text>
       </div>
       <ha-select
-        .label=${this.hass.localize(
-          "ui.panel.lovelace.editor.features.types.state.font_weight"
-        )}
+        .label=${STRINGS.font_weight_label}
         naturalMenuWidth
         .value=${String(this._config.font_weight ?? DEFAULT_FONT_WEIGHT)}
         .options=${FONT_WEIGHT_OPTIONS.map((weight) => ({
           value: String(weight),
-          label: this.hass!.localize(
-            `ui.panel.lovelace.editor.features.types.state.font_weight_options.${weight}`
-          ),
+          label: STRINGS.font_weight_options[weight],
         }))}
         @closed=${this._stopPropagation}
         @selected=${this._fontWeightChanged}

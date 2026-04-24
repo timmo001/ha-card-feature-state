@@ -21,10 +21,8 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@lit/context": "^1.1.6",
     "home-assistant-js-websocket": "^9.5.0",
-    "lit": "^3.3.1",
-    "memoize-one": "^6.0.0"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
     "prettier": "^3.6.2",
