@@ -1,0 +1,409 @@
+import { consume, type ContextType } from "@lit/context";
+import type { HassEntity } from "home-assistant-js-websocket";
+import { css, html, LitElement, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import memoizeOne from "memoize-one";
+import { consumeEntityState } from "../ha/common/decorators/consume-context-entry";
+import { computeDomain } from "../ha/common/entity/compute_domain";
+import { getEntityContext } from "../ha/common/entity/context/get_entity_context";
+import { fireEvent } from "../ha/common/dom/fire_event";
+import type { LocalizeFunc } from "../ha/common/translations/localize";
+import type { FormatEntityAttributeNameFunc } from "../ha/common/translations/entity-state";
+import { HIDDEN_STATE_CONTENT_ATTRIBUTES } from "../ha/components/entity/hidden-state-content-attributes";
+import {
+  internationalizationContext,
+  registriesContext,
+} from "../ha/data/context";
+import {
+  STATE_DISPLAY_SPECIAL_CONTENT,
+  STATE_DISPLAY_SPECIAL_CONTENT_DOMAINS,
+} from "../ha/state-display/state-display";
+import type { HomeAssistant, ValueChangedEvent } from "../ha/types";
+import type {
+  LovelaceCardFeatureContext,
+  StateCardFeatureConfig,
+} from "../ha/panels/lovelace/card-features/types";
+import type { LovelaceCardFeatureEditor } from "../ha/panels/lovelace/types";
+import { FEATURE_EDITOR_TYPE } from "./const";
+
+interface HaSelectDetail<T = string> {
+  value: T;
+}
+
+type HaSelectSelectEvent<T = string> = CustomEvent<HaSelectDetail<T>>;
+
+interface HaInputLike extends HTMLElement {
+  value: string;
+}
+
+const FONT_SIZE_PRESETS: {
+  value: number;
+  tokenKey: "s" | "m" | "l" | "xl" | "2xl" | "3xl";
+}[] = [
+  { value: 12, tokenKey: "s" },
+  { value: 14, tokenKey: "m" },
+  { value: 16, tokenKey: "l" },
+  { value: 20, tokenKey: "xl" },
+  { value: 24, tokenKey: "2xl" },
+  { value: 28, tokenKey: "3xl" },
+];
+
+const DEFAULT_TARGET_FONT_SIZE = 24;
+const MIN_TARGET_FONT_SIZE = 12;
+const MAX_TARGET_FONT_SIZE = 28;
+
+const FONT_WEIGHT_OPTIONS = [300, 400, 500, 700] as const;
+
+const DEFAULT_FONT_WEIGHT = 500;
+
+type FontSizeMode = "preset" | "custom";
+
+@customElement(FEATURE_EDITOR_TYPE)
+export class HuiStateCardFeatureEditor
+  extends LitElement
+  implements LovelaceCardFeatureEditor
+{
+  @property({ attribute: false }) public hass?: HomeAssistant;
+
+  @property({ attribute: false }) public context?: LovelaceCardFeatureContext;
+
+  @state()
+  @consume({ context: internationalizationContext, subscribe: true })
+  private _i18n?: ContextType<typeof internationalizationContext>;
+
+  @state()
+  @consumeEntityState({ entityIdPath: ["context", "entity_id"] })
+  private _stateObj?: HassEntity;
+
+  @consume({ context: registriesContext, subscribe: true })
+  private _registries?: ContextType<typeof registriesContext>;
+
+  @state() private _config?: StateCardFeatureConfig;
+
+  @state() private _fontSizeMode?: FontSizeMode;
+
+  public setConfig(config: StateCardFeatureConfig): void {
+    this._config = config;
+    if (this._fontSizeMode === undefined) {
+      this._fontSizeMode = this._detectMode(config.target_font_size);
+    }
+  }
+
+  private _detectMode(size: number | undefined): FontSizeMode {
+    if (size === undefined) return "preset";
+    return FONT_SIZE_PRESETS.some((preset) => preset.value === size)
+      ? "preset"
+      : "custom";
+  }
+
+  private _getContentOptions = memoizeOne(
+    (
+      localize: LocalizeFunc,
+      formatEntityAttributeName: FormatEntityAttributeNameFunc,
+      stateObj: HassEntity | undefined,
+      entityId: string | undefined
+    ) => {
+      const domain = entityId ? computeDomain(entityId) : undefined;
+
+      const options: { value: string; label: string }[] = [
+        {
+          value: "state",
+          label: localize("ui.components.state-content-picker.state"),
+        },
+        {
+          value: "last_changed",
+          label: localize("ui.components.state-content-picker.last_changed"),
+        },
+        {
+          value: "last_updated",
+          label: localize("ui.components.state-content-picker.last_updated"),
+        },
+      ];
+
+      if (stateObj && this._registries) {
+        const entityContext = getEntityContext(
+          stateObj,
+          this._registries.entities,
+          this._registries.devices,
+          this._registries.areas,
+          this._registries.floors
+        );
+        if (entityContext.device) {
+          options.push({
+            value: "device_name",
+            label: localize("ui.components.state-content-picker.device_name"),
+          });
+        }
+        if (entityContext.area) {
+          options.push({
+            value: "area_name",
+            label: localize("ui.components.state-content-picker.area_name"),
+          });
+        }
+        if (entityContext.floor) {
+          options.push({
+            value: "floor_name",
+            label: localize("ui.components.state-content-picker.floor_name"),
+          });
+        }
+      }
+
+      if (domain) {
+        STATE_DISPLAY_SPECIAL_CONTENT.filter((content) =>
+          STATE_DISPLAY_SPECIAL_CONTENT_DOMAINS[domain]?.includes(content)
+        ).forEach((content) => {
+          options.push({
+            value: content,
+            label: localize(`ui.components.state-content-picker.${content}`),
+          });
+        });
+      }
+
+      if (stateObj) {
+        Object.keys(stateObj.attributes)
+          .filter((a) => !HIDDEN_STATE_CONTENT_ATTRIBUTES.includes(a))
+          .forEach((attribute) => {
+            options.push({
+              value: attribute,
+              label: formatEntityAttributeName(stateObj, attribute),
+            });
+          });
+      }
+
+      return options;
+    }
+  );
+
+  protected render() {
+    if (!this.hass || !this._config || !this._i18n) {
+      return nothing;
+    }
+
+    const contentOptions = this._getContentOptions(
+      this._i18n.localize,
+      this.hass.formatEntityAttributeName,
+      this._stateObj,
+      this.context?.entity_id
+    );
+
+    const stateContent = Array.isArray(this._config.state_content)
+      ? this._config.state_content[0]
+      : (this._config.state_content ?? "state");
+
+    const mode = this._fontSizeMode ?? "preset";
+    const targetFontSize = this._config.target_font_size;
+
+    const modeButtons = [
+      {
+        label: this._i18n.localize(
+          "ui.panel.lovelace.editor.features.types.state.target_font_size_mode_preset"
+        ),
+        value: "preset",
+      },
+      {
+        label: this._i18n.localize(
+          "ui.panel.lovelace.editor.features.types.state.target_font_size_mode_custom"
+        ),
+        value: "custom",
+      },
+    ];
+
+    const presetValue =
+      targetFontSize !== undefined &&
+      FONT_SIZE_PRESETS.some((preset) => preset.value === targetFontSize)
+        ? String(targetFontSize)
+        : String(DEFAULT_TARGET_FONT_SIZE);
+
+    return html`
+      <ha-select
+        .label=${this._i18n.localize(
+          "ui.panel.lovelace.editor.card.tile.state_content"
+        )}
+        naturalMenuWidth
+        .value=${stateContent}
+        .options=${contentOptions}
+        @closed=${this._stopPropagation}
+        @selected=${this._stateContentChanged}
+      ></ha-select>
+      <div class="font-size">
+        <div class="header">
+          <label>
+            ${this._i18n.localize(
+              "ui.panel.lovelace.editor.features.types.state.target_font_size"
+            )}
+          </label>
+          <ha-button-toggle-group
+            size="small"
+            .buttons=${modeButtons}
+            .active=${mode}
+            @value-changed=${this._fontSizeModeChanged}
+          ></ha-button-toggle-group>
+        </div>
+        ${mode === "preset"
+          ? html`
+              <ha-select
+                naturalMenuWidth
+                .value=${presetValue}
+                .options=${FONT_SIZE_PRESETS.map((preset) => ({
+                  value: String(preset.value),
+                  label: this._i18n!.localize(
+                    `ui.panel.lovelace.editor.features.types.state.target_font_size_presets.${preset.tokenKey}`
+                  ),
+                }))}
+                @closed=${this._stopPropagation}
+                @selected=${this._presetChanged}
+              ></ha-select>
+            `
+          : html`
+              <ha-input
+                type="number"
+                min=${String(MIN_TARGET_FONT_SIZE)}
+                max=${String(MAX_TARGET_FONT_SIZE)}
+                step="1"
+                .value=${targetFontSize !== undefined
+                  ? String(targetFontSize)
+                  : String(DEFAULT_TARGET_FONT_SIZE)}
+                @input=${this._customChanged}
+              >
+                <span slot="end">px</span>
+              </ha-input>
+            `}
+        <ha-input-helper-text>
+          ${this._i18n.localize(
+            "ui.panel.lovelace.editor.features.types.state.target_font_size_helper"
+          )}
+        </ha-input-helper-text>
+      </div>
+      <ha-select
+        .label=${this._i18n.localize(
+          "ui.panel.lovelace.editor.features.types.state.font_weight"
+        )}
+        naturalMenuWidth
+        .value=${String(this._config.font_weight ?? DEFAULT_FONT_WEIGHT)}
+        .options=${FONT_WEIGHT_OPTIONS.map((weight) => ({
+          value: String(weight),
+          label: this._i18n!.localize(
+            `ui.panel.lovelace.editor.features.types.state.font_weight_options.${weight}`
+          ),
+        }))}
+        @closed=${this._stopPropagation}
+        @selected=${this._fontWeightChanged}
+      ></ha-select>
+    `;
+  }
+
+  private _stopPropagation(ev: Event) {
+    ev.stopPropagation();
+  }
+
+  private _fontSizeModeChanged(ev: ValueChangedEvent<FontSizeMode>) {
+    ev.stopPropagation();
+    if (!ev.detail.value || ev.detail.value === this._fontSizeMode) {
+      return;
+    }
+    this._fontSizeMode = ev.detail.value;
+  }
+
+  private _presetChanged(ev: HaSelectSelectEvent<string | number>) {
+    ev.stopPropagation();
+    const value = Number(ev.detail.value);
+    if (!Number.isFinite(value)) return;
+    this._updateTargetFontSize(value);
+  }
+
+  private _customChanged(ev: Event) {
+    ev.stopPropagation();
+    const target = ev.currentTarget as HaInputLike | null;
+    if (!target) {
+      return;
+    }
+    const raw = target.value;
+    if (raw === "") {
+      this._updateTargetFontSize(undefined);
+      return;
+    }
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return;
+    this._updateTargetFontSize(value);
+  }
+
+  private _updateTargetFontSize(value: number | undefined) {
+    if (!this._config) return;
+    const normalizedValue =
+      value === undefined
+        ? undefined
+        : Math.max(MIN_TARGET_FONT_SIZE, Math.min(MAX_TARGET_FONT_SIZE, value));
+
+    const newConfig = { ...this._config };
+    if (
+      normalizedValue === undefined ||
+      normalizedValue === DEFAULT_TARGET_FONT_SIZE
+    ) {
+      delete newConfig.target_font_size;
+    } else {
+      newConfig.target_font_size = normalizedValue;
+    }
+    fireEvent(this, "config-changed", { config: newConfig });
+  }
+
+  private _stateContentChanged(ev: HaSelectSelectEvent<string>) {
+    ev.stopPropagation();
+    if (!this._config) return;
+    const newConfig = { ...this._config };
+    const value = ev.detail.value;
+    if (!value || value === "state") {
+      delete newConfig.state_content;
+    } else {
+      newConfig.state_content = value;
+    }
+    fireEvent(this, "config-changed", { config: newConfig });
+  }
+
+  private _fontWeightChanged(ev: HaSelectSelectEvent<string | number>) {
+    ev.stopPropagation();
+    if (!this._config) return;
+    const weight = Number(ev.detail.value);
+    if (!Number.isFinite(weight)) return;
+    const newConfig = { ...this._config };
+    if (weight === DEFAULT_FONT_WEIGHT) {
+      delete newConfig.font_weight;
+    } else {
+      newConfig.font_weight = weight;
+    }
+    fireEvent(this, "config-changed", { config: newConfig });
+  }
+
+  static styles = css`
+    :host {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ha-space-4);
+    }
+    .font-size {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ha-space-2);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    label {
+      font-weight: var(--ha-font-weight-medium);
+    }
+    ha-select,
+    ha-input {
+      width: 100%;
+    }
+  `;
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "hui-state-card-feature-editor": HuiStateCardFeatureEditor;
+  }
+  interface HASSDomEvents {
+    "config-changed": { config: unknown };
+  }
+}
