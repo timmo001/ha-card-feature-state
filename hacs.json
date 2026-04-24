@@ -1,0 +1,7 @@
+{
+  "name": "State card feature",
+  "content_in_root": false,
+  "filename": "ha-card-feature-state.js",
+  "homeassistant": "2025.6",
+  "render_readme": false
+}

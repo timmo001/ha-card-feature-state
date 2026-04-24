@@ -1,0 +1,37 @@
+{
+  "name": "ha-card-feature-state",
+  "version": "0.0.1",
+  "description": "Home Assistant state custom card feature",
+  "main": "src/card/ha-card-feature-state.js",
+  "scripts": {
+    "start": "rolldown -c --watch",
+    "build": "rolldown -c",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "publish-to-local": "bash ./scripts/publish-to-local.sh"
+  },
+  "author": {
+    "name": "Aidan Timson",
+    "email": "aidan@timmo.dev",
+    "url": "https://timmo.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/timmo001/ha-card-feature-state"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@lit/context": "^1.1.6",
+    "home-assistant-js-websocket": "^9.5.0",
+    "lit": "^3.3.1",
+    "memoize-one": "^6.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "rolldown": "^1.0.0-rc.11",
+    "rollup-plugin-serve": "^1.1.1",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.4"
+  },
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
+}
