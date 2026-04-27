@@ -16,7 +16,7 @@ export type FormatEntityAttributeNameFunc = (
   attribute: string
 ) => string;
 
-export type EntityNameType = "entity" | "device" | "area" | "floor";
+type EntityNameType = "entity" | "device" | "area" | "floor";
 
 export type FormatEntityNameFunc = (
   stateObj: HassEntity,

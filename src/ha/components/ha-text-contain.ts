@@ -12,7 +12,7 @@ import { customElement, property, query } from "lit/decorators.js";
  * changes (text content, children, attributes).
  */
 @customElement("ha-text-contain")
-export class HaTextContain extends LitElement {
+class HaTextContain extends LitElement {
   /** Minimum font size in pixels. Content will not shrink below this. */
   @property({ type: Number, attribute: "min-size" })
   public minSize?: number;

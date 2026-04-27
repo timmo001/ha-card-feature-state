@@ -2,7 +2,7 @@ import type { HassEntity } from "home-assistant-js-websocket";
 import type { HomeAssistant, LovelaceCardFeatureConfig } from "../../types";
 import type { LovelaceCardFeatureContext } from "./card-features/types";
 
-export interface LovelaceGenericElementEditor extends HTMLElement {
+interface LovelaceGenericElementEditor extends HTMLElement {
   hass?: HomeAssistant;
   lovelace?: unknown;
   context?: LovelaceCardFeatureContext;

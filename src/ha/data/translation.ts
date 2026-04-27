@@ -1,4 +1,4 @@
-export enum NumberFormat {
+enum NumberFormat {
   auto = "auto",
   numeric = "numeric",
   scientific = "scientific",

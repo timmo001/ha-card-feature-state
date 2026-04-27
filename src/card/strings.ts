@@ -32,6 +32,6 @@ export const STRINGS = {
   },
 } as const;
 
-export type StateContentOptionKey = keyof typeof STRINGS.state_content_options;
-export type FontSizePresetKey = keyof typeof STRINGS.target_font_size_presets;
-export type FontWeightKey = keyof typeof STRINGS.font_weight_options;
+type StateContentOptionKey = keyof typeof STRINGS.state_content_options;
+type FontSizePresetKey = keyof typeof STRINGS.target_font_size_presets;
+type FontWeightKey = keyof typeof STRINGS.font_weight_options;

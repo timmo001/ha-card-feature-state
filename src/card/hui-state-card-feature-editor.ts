@@ -51,7 +51,7 @@ const DEFAULT_FONT_WEIGHT = 500;
 type FontSizeMode = "preset" | "custom";
 
 @customElement(FEATURE_EDITOR_TYPE)
-export class HuiStateCardFeatureEditor
+class HuiStateCardFeatureEditor
   extends LitElement
   implements LovelaceCardFeatureEditor
 {

@@ -2,7 +2,6 @@ import type {
   Connection,
   HassConfig,
   HassEntities,
-  HassEntity,
   HassServices,
 } from "home-assistant-js-websocket";
 import type { FrontendLocaleData } from "./data/translation";
@@ -49,21 +48,21 @@ export interface FloorRegistryEntry {
   [key: string]: unknown;
 }
 
-export interface HomeAssistantRegistries {
+interface HomeAssistantRegistries {
   entities: Record<string, EntityRegistryDisplayEntry>;
   devices: Record<string, DeviceRegistryEntry>;
   areas: Record<string, AreaRegistryEntry>;
   floors: Record<string, FloorRegistryEntry>;
 }
 
-export interface HomeAssistantInternationalization {
+interface HomeAssistantInternationalization {
   language: string;
   selectedLanguage: string | null;
   locale: FrontendLocaleData;
   localize: LocalizeFunc;
 }
 
-export interface HomeAssistantFormatters {
+interface HomeAssistantFormatters {
   formatEntityState: FormatEntityStateFunc;
   formatEntityAttributeValue: FormatEntityAttributeValueFunc;
   formatEntityAttributeName: FormatEntityAttributeNameFunc;
@@ -89,5 +88,3 @@ export interface ValueChangedEvent<T> extends CustomEvent {
     value: T;
   };
 }
-
-export type { HassEntity };

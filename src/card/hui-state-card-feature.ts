@@ -14,7 +14,7 @@ import type {
 import { FEATURE_NAME, FEATURE_TYPE } from "./const";
 import { registerCustomCardFeature } from "../utils/custom-cards";
 
-export const supportsStateCardFeature = (
+const supportsStateCardFeature = (
   hass: HomeAssistant,
   context: LovelaceCardFeatureContext
 ) => {
