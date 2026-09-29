@@ -45,6 +45,7 @@ class HaTextContain extends LitElement {
     super.firstUpdated(changedProps);
     this._resizeObserver = new ResizeObserver(() => this._scheduleFit());
     this._resizeObserver.observe(this);
+
     if (this._content) {
       this._mutationObserver = new MutationObserver(() => this._scheduleFit());
       this._mutationObserver.observe(this._content, {
@@ -53,11 +54,13 @@ class HaTextContain extends LitElement {
         characterData: true,
       });
     }
+
     this._scheduleFit();
   }
 
   protected updated(changedProps: PropertyValues<this>) {
     super.updated(changedProps);
+
     if (
       changedProps.has("minSize") ||
       changedProps.has("maxSize") ||
@@ -79,6 +82,7 @@ class HaTextContain extends LitElement {
   private _fitText() {
     const content = this._content;
     const { minSize, maxSize } = this;
+
     if (!content || minSize === undefined || maxSize === undefined) return;
 
     content.style.fontWeight = this.fontWeight ? String(this.fontWeight) : "";
@@ -86,6 +90,7 @@ class HaTextContain extends LitElement {
     const scaleRaw = getComputedStyle(this)
       .getPropertyValue("--ha-font-size-scale")
       .trim();
+
     const fontScale = Number(scaleRaw) || 1;
     const scaledMin = minSize * fontScale;
     const scaledMax = maxSize * fontScale;
@@ -107,6 +112,7 @@ class HaTextContain extends LitElement {
 
     if (scale >= 1) {
       content.style.fontSize = `${scaledMax}px`;
+
       return;
     }
 

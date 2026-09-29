@@ -41,7 +41,9 @@ const FONT_SIZE_PRESETS: {
 ];
 
 const DEFAULT_TARGET_FONT_SIZE = 24;
+
 const MIN_TARGET_FONT_SIZE = 12;
+
 const MAX_TARGET_FONT_SIZE = 28;
 
 const FONT_WEIGHT_OPTIONS = [300, 400, 500, 700] as const;
@@ -65,6 +67,7 @@ class HuiStateCardFeatureEditor
 
   public setConfig(config: StateCardFeatureConfig): void {
     this._config = config;
+
     if (this._fontSizeMode === undefined) {
       this._fontSizeMode = this._detectMode(config.target_font_size);
     }
@@ -76,11 +79,13 @@ class HuiStateCardFeatureEditor
 
   private get _stateObj(): HassEntity | undefined {
     if (!this.hass || !this._entityId) return undefined;
+
     return this.hass.states[this._entityId];
   }
 
   private _detectMode(size: number | undefined): FontSizeMode {
     if (size === undefined) return "preset";
+
     return FONT_SIZE_PRESETS.some((preset) => preset.value === size)
       ? "preset"
       : "custom";
@@ -112,18 +117,21 @@ class HuiStateCardFeatureEditor
         this.hass.areas,
         this.hass.floors
       );
+
       if (entityContext.device) {
         options.push({
           value: "device_name",
           label: STRINGS.state_content_options.device_name,
         });
       }
+
       if (entityContext.area) {
         options.push({
           value: "area_name",
           label: STRINGS.state_content_options.area_name,
         });
       }
+
       if (entityContext.floor) {
         options.push({
           value: "floor_name",
@@ -134,7 +142,7 @@ class HuiStateCardFeatureEditor
 
     if (domain) {
       STATE_DISPLAY_SPECIAL_CONTENT.filter((content) =>
-        STATE_DISPLAY_SPECIAL_CONTENT_DOMAINS[domain]?.includes(content)
+        STATE_DISPLAY_SPECIAL_CONTENT_DOMAINS.get(domain)?.includes(content)
       ).forEach((content) => {
         options.push({
           value: content,
@@ -210,33 +218,37 @@ class HuiStateCardFeatureEditor
             @value-changed=${this._fontSizeModeChanged}
           ></ha-button-toggle-group>
         </div>
-        ${mode === "preset"
-          ? html`
-              <ha-select
-                naturalMenuWidth
-                .value=${presetValue}
-                .options=${FONT_SIZE_PRESETS.map((preset) => ({
-                  value: String(preset.value),
-                  label: STRINGS.target_font_size_presets[preset.tokenKey],
-                }))}
-                @closed=${this._stopPropagation}
-                @selected=${this._presetChanged}
-              ></ha-select>
-            `
-          : html`
-              <ha-input
-                type="number"
-                min=${String(MIN_TARGET_FONT_SIZE)}
-                max=${String(MAX_TARGET_FONT_SIZE)}
-                step="1"
-                .value=${targetFontSize !== undefined
-                  ? String(targetFontSize)
-                  : String(DEFAULT_TARGET_FONT_SIZE)}
-                @input=${this._customChanged}
-              >
-                <span slot="end">px</span>
-              </ha-input>
-            `}
+        ${
+          mode === "preset"
+            ? html`
+                <ha-select
+                  naturalMenuWidth
+                  .value=${presetValue}
+                  .options=${FONT_SIZE_PRESETS.map((preset) => ({
+                    value: String(preset.value),
+                    label: STRINGS.target_font_size_presets[preset.tokenKey],
+                  }))}
+                  @closed=${this._stopPropagation}
+                  @selected=${this._presetChanged}
+                ></ha-select>
+              `
+            : html`
+                <ha-input
+                  type="number"
+                  min=${String(MIN_TARGET_FONT_SIZE)}
+                  max=${String(MAX_TARGET_FONT_SIZE)}
+                  step="1"
+                  .value=${
+                    targetFontSize !== undefined
+                      ? String(targetFontSize)
+                      : String(DEFAULT_TARGET_FONT_SIZE)
+                  }
+                  @input=${this._customChanged}
+                >
+                  <span slot="end">px</span>
+                </ha-input>
+              `
+        }
         <ha-input-helper-text>
           ${STRINGS.target_font_size_helper}
         </ha-input-helper-text>
@@ -255,49 +267,62 @@ class HuiStateCardFeatureEditor
     `;
   }
 
-  private _stopPropagation(ev: Event) {
+  private _stopPropagation = (ev: Event) => {
     ev.stopPropagation();
-  }
+  };
 
-  private _fontSizeModeChanged(ev: ValueChangedEvent<FontSizeMode>) {
+  private _fontSizeModeChanged = (ev: ValueChangedEvent<FontSizeMode>) => {
     ev.stopPropagation();
+
     if (!ev.detail.value || ev.detail.value === this._fontSizeMode) {
       return;
     }
-    this._fontSizeMode = ev.detail.value;
-  }
 
-  private _presetChanged(ev: HaSelectSelectEvent<string | number>) {
+    this._fontSizeMode = ev.detail.value;
+  };
+
+  private _presetChanged = (ev: HaSelectSelectEvent<string | number>) => {
     ev.stopPropagation();
     const value = Number(ev.detail.value);
+
     if (!Number.isFinite(value)) return;
     this._updateTargetFontSize(value);
-  }
+  };
 
-  private _customChanged(ev: Event) {
+  private _customChanged = (
+    ev: Event & { currentTarget: HaInputLike | null }
+  ) => {
     ev.stopPropagation();
-    const target = ev.currentTarget as HaInputLike | null;
+    const target = ev.currentTarget;
+
     if (!target) {
       return;
     }
+
     const raw = target.value;
+
     if (raw === "") {
       this._updateTargetFontSize(undefined);
+
       return;
     }
+
     const value = Number(raw);
+
     if (!Number.isFinite(value)) return;
     this._updateTargetFontSize(value);
-  }
+  };
 
   private _updateTargetFontSize(value: number | undefined) {
     if (!this._config) return;
+
     const normalizedValue =
       value === undefined
         ? undefined
         : Math.max(MIN_TARGET_FONT_SIZE, Math.min(MAX_TARGET_FONT_SIZE, value));
 
     const newConfig = { ...this._config };
+
     if (
       normalizedValue === undefined ||
       normalizedValue === DEFAULT_TARGET_FONT_SIZE
@@ -306,35 +331,43 @@ class HuiStateCardFeatureEditor
     } else {
       newConfig.target_font_size = normalizedValue;
     }
+
     fireEvent(this, "config-changed", { config: newConfig });
   }
 
-  private _stateContentChanged(ev: HaSelectSelectEvent<string>) {
+  private _stateContentChanged = (ev: HaSelectSelectEvent<string>) => {
     ev.stopPropagation();
+
     if (!this._config) return;
     const newConfig = { ...this._config };
     const value = ev.detail.value;
+
     if (!value || value === "state") {
       delete newConfig.state_content;
     } else {
       newConfig.state_content = value;
     }
-    fireEvent(this, "config-changed", { config: newConfig });
-  }
 
-  private _fontWeightChanged(ev: HaSelectSelectEvent<string | number>) {
+    fireEvent(this, "config-changed", { config: newConfig });
+  };
+
+  private _fontWeightChanged = (ev: HaSelectSelectEvent<string | number>) => {
     ev.stopPropagation();
+
     if (!this._config) return;
     const weight = Number(ev.detail.value);
+
     if (!Number.isFinite(weight)) return;
     const newConfig = { ...this._config };
+
     if (weight === DEFAULT_FONT_WEIGHT) {
       delete newConfig.font_weight;
     } else {
       newConfig.font_weight = weight;
     }
+
     fireEvent(this, "config-changed", { config: newConfig });
-  }
+  };
 
   static styles = css`
     :host {
@@ -366,6 +399,7 @@ declare global {
   interface HTMLElementTagNameMap {
     "hui-state-card-feature-editor": HuiStateCardFeatureEditor;
   }
+
   interface HASSDomEvents {
     "config-changed": { config: unknown };
   }

@@ -21,6 +21,7 @@ const supportsStateCardFeature = (
   const stateObj = context.entity_id
     ? hass.states[context.entity_id]
     : undefined;
+
   return Boolean(stateObj);
 };
 
@@ -39,11 +40,12 @@ class HuiStateCardFeature extends LitElement implements LovelaceCardFeature {
 
   @state() private _config?: StateCardFeatureConfig;
 
-  private get _stateObj() {
+  private get _stateObj(): HassEntity | undefined {
     if (!this.hass || !this.context || !this.context.entity_id) {
       return undefined;
     }
-    return this.hass.states[this.context.entity_id] as HassEntity | undefined;
+
+    return this.hass.states[this.context.entity_id];
   }
 
   static getStubConfig(): StateCardFeatureConfig {
@@ -54,6 +56,7 @@ class HuiStateCardFeature extends LitElement implements LovelaceCardFeature {
 
   public static async getConfigElement(): Promise<LovelaceCardFeatureEditor> {
     await import("./hui-state-card-feature-editor");
+
     return document.createElement("hui-state-card-feature-editor");
   }
 
@@ -61,6 +64,7 @@ class HuiStateCardFeature extends LitElement implements LovelaceCardFeature {
     if (!config) {
       throw new Error("Invalid configuration");
     }
+
     this._config = config;
   }
 

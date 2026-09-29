@@ -6,7 +6,7 @@ interface LovelaceGenericElementEditor extends HTMLElement {
   hass?: HomeAssistant;
   lovelace?: unknown;
   context?: LovelaceCardFeatureContext;
-  setConfig(config: unknown): void;
+  setConfig(config: LovelaceCardFeatureConfig): void;
   focusYamlEditor?(): void;
 }
 

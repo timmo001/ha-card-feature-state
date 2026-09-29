@@ -31,7 +31,3 @@ export const STRINGS = {
     700: "Bold",
   },
 } as const;
-
-type StateContentOptionKey = keyof typeof STRINGS.state_content_options;
-type FontSizePresetKey = keyof typeof STRINGS.target_font_size_presets;
-type FontWeightKey = keyof typeof STRINGS.font_weight_options;

@@ -32,20 +32,17 @@ export interface DeviceRegistryEntry {
   id: string;
   name: string | null;
   area_id: string | null;
-  [key: string]: unknown;
 }
 
 export interface AreaRegistryEntry {
   area_id: string;
   name: string;
   floor_id: string | null;
-  [key: string]: unknown;
 }
 
 export interface FloorRegistryEntry {
   floor_id: string;
   name: string;
-  [key: string]: unknown;
 }
 
 interface HomeAssistantRegistries {
@@ -70,7 +67,8 @@ interface HomeAssistantFormatters {
 }
 
 export interface HomeAssistant
-  extends HomeAssistantRegistries,
+  extends
+    HomeAssistantRegistries,
     HomeAssistantInternationalization,
     HomeAssistantFormatters {
   connection: Connection;
