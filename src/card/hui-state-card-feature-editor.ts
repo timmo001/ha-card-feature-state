@@ -151,13 +151,15 @@ class HuiStateCardFeatureEditor
       });
     }
 
-    if (stateObj && this.hass) {
+    const hass = this.hass;
+
+    if (stateObj && hass) {
       Object.keys(stateObj.attributes)
         .filter((a) => !HIDDEN_STATE_CONTENT_ATTRIBUTES.includes(a))
         .forEach((attribute) => {
           options.push({
             value: attribute,
-            label: this.hass!.formatEntityAttributeName(stateObj, attribute),
+            label: hass.formatEntityAttributeName(stateObj, attribute),
           });
         });
     }
@@ -335,7 +337,7 @@ class HuiStateCardFeatureEditor
     fireEvent(this, "config-changed", { config: newConfig });
   }
 
-  private _stateContentChanged = (ev: HaSelectSelectEvent<string>) => {
+  private _stateContentChanged = (ev: HaSelectSelectEvent) => {
     ev.stopPropagation();
 
     if (!this._config) return;
