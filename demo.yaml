@@ -1,0 +1,32 @@
+# Live demo on https://timmo.dev/demos/ha-card-feature-state, rendered with
+# Home Assistant's embed components against mocked entities. It's read from
+# each release, so it has to match that release's feature.
+entities:
+  - entity_id: sensor.living_room_temperature
+    state: "21.4"
+    attributes:
+      friendly_name: Living room temperature
+      device_class: temperature
+      state_class: measurement
+      unit_of_measurement: °C
+  - entity_id: media_player.living_room
+    state: playing
+    attributes:
+      friendly_name: Living room speaker
+      media_title: Clair de lune
+      media_artist: Claude Debussy
+cards:
+  - type: tile
+    entity: sensor.living_room_temperature
+    features:
+      - type: custom:hui-state-card-feature
+        state_content: state
+        target_font_size: 24
+        font_weight: 500
+  - type: tile
+    entity: media_player.living_room
+    features:
+      - type: custom:hui-state-card-feature
+        state_content: media_title
+        target_font_size: 18
+        font_weight: 400
