@@ -9,6 +9,7 @@ using `state-display`. Supports selecting any state content item including attri
 <img width="1431" height="481" alt="image" src="https://github.com/user-attachments/assets/e80b2bfa-d317-42f3-af2d-1d951d1ac89d" />
 
 <!-- ha-marketplace:exclude-start -->
+
 ## Installation
 
 ### HACS (Recommended)
