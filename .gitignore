@@ -22,7 +22,3 @@ temp/
 
 # Fallow
 .fallow
-
-# mise lock-time cache
-.mise/
-
